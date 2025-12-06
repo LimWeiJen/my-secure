@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, ScanLine, CheckCircle, User, Lock, HeartPulse, CircleDotDashed, Eye, ArrowLeft } from "lucide-react";
+import { Loader2, ScanLine, CheckCircle, User, Lock, HeartPulse, CircleDotDashed, Eye, ArrowLeft, VideoOff } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 
 const totalSteps = 4;
 
@@ -69,7 +71,7 @@ export default function RegistrationWizard() {
         <Progress value={progressValue} className="w-full h-2" />
       </div>
 
-      <div className="w-full overflow-hidden relative" style={{ minHeight: '450px' }}>
+      <div className="w-full overflow-hidden relative" style={{ minHeight: '520px' }}>
         <AnimatePresence initial={false} custom={direction}>
             <motion.div
               key={step}
@@ -118,8 +120,37 @@ function Step1({ onNext }: { onNext: () => void }) {
 // Step 2: ID Scan
 function Step2({ onNext }: { onNext: () => void }) {
   const [isScanning, setIsScanning] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    let stream: MediaStream;
+    const getCameraPermission = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions to proceed.',
+        });
+      }
+    };
+    getCameraPermission();
+    return () => {
+      stream?.getTracks().forEach(track => track.stop());
+    };
+  }, [toast]);
 
   const handleScan = () => {
+    if (!hasCameraPermission) return;
     setIsScanning(true);
     setTimeout(() => {
       onNext();
@@ -133,14 +164,15 @@ function Step2({ onNext }: { onNext: () => void }) {
       </CardHeader>
       <CardContent className="flex flex-col items-center">
         <div className="relative w-full aspect-[1.586/1] max-w-sm bg-muted rounded-lg overflow-hidden border-2 border-dashed flex items-center justify-center mb-6">
-          <div className="absolute inset-4 border-2 border-foreground/30 rounded-md flex flex-col items-center justify-center p-4">
-              <User className="w-16 h-16 text-foreground/20 mb-2"/>
-              <p className="text-xs text-center text-foreground/40">Align your MyKad within the frame</p>
+          <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+          <div className="absolute inset-4 border-2 border-white/50 rounded-md flex flex-col items-center justify-center p-4 backdrop-blur-sm bg-black/10">
+              <User className="w-16 h-16 text-white/50 mb-2"/>
+              <p className="text-xs text-center text-white/80 font-medium">Align your MyKad within the frame</p>
           </div>
            {isScanning && (
             <div className="absolute inset-0 bg-accent/30 flex flex-col items-center justify-center">
               <motion.div
-                className="absolute top-0 w-full h-1 bg-accent/80 shadow-[0_0_10px_theme(colors.accent)]"
+                className="absolute top-0 w-full h-1 bg-accent/80 shadow-lg shadow-accent"
                 initial={{ y: 0 }}
                 animate={{ y: '100%' }}
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -149,8 +181,20 @@ function Step2({ onNext }: { onNext: () => void }) {
               <p className="text-accent-foreground font-semibold">Scanning & OCR Extraction...</p>
             </div>
           )}
+           {hasCameraPermission === false && (
+            <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center text-destructive">
+                <VideoOff className="w-16 h-16 mb-4" />
+                <p className="font-semibold">Camera Access Required</p>
+            </div>
+           )}
         </div>
-        <Button onClick={handleScan} disabled={isScanning} className="w-full max-w-sm" size="lg">
+         {hasCameraPermission === false && (
+            <Alert variant="destructive" className="mb-4 text-center">
+              <AlertTitle>Camera Disabled</AlertTitle>
+              <AlertDescription>Please grant camera access in your browser settings and refresh the page.</AlertDescription>
+            </Alert>
+        )}
+        <Button onClick={handleScan} disabled={isScanning || !hasCameraPermission} className="w-full max-w-sm" size="lg">
           {isScanning ? <Loader2 className="animate-spin" /> : <ScanLine className="mr-2" />}
           {isScanning ? "Scanning..." : "Tap to Scan MyKad"}
         </Button>
@@ -162,12 +206,40 @@ function Step2({ onNext }: { onNext: () => void }) {
 // Step 3: Liveness Check
 function Step3({ onNext }: { onNext: () => void }) {
   const [status, setStatus] = useState<"idle" | "looking" | "blink" | "turn" | "success">("idle");
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
+
   const messages = {
     looking: { icon: <CircleDotDashed className="animate-spin" />, text: "Looking for face..." },
     blink: { icon: <Eye />, text: "Blink your eyes." },
     turn: { icon: <ArrowLeft />, text: "Turn head slightly left." },
     success: { icon: <CheckCircle className="text-emerald-500" />, text: "Success!" }
   }
+
+  useEffect(() => {
+    let stream: MediaStream;
+    if (status !== 'idle') {
+      const getCameraPermission = async () => {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({ variant: 'destructive', title: 'Camera Access Denied' });
+        }
+      };
+      getCameraPermission();
+    }
+    return () => {
+      stream?.getTracks().forEach(track => track.stop());
+    };
+  }, [status, toast]);
+
 
   const handleScan = () => {
     setStatus("looking");
@@ -189,31 +261,43 @@ function Step3({ onNext }: { onNext: () => void }) {
       </CardHeader>
       <CardContent className="flex flex-col items-center">
         <div className="relative w-64 h-64 bg-muted rounded-full overflow-hidden border-2 border-dashed flex items-center justify-center mb-6">
-            <div className="flex flex-col items-center justify-center text-accent">
-                {currentStatus?.icon ? (
-                    <motion.div 
-                      key={status}
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="w-16 h-16"
-                    >
-                      {currentStatus.icon}
-                    </motion.div>
-                ) : (
-                    <User className="w-24 h-24 text-foreground/20"/>
-                )}
-
-                {currentStatus?.text && (
-                  <motion.p 
-                    key={status + 'text'}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="font-semibold mt-4 text-center"
-                  >
-                    {currentStatus.text}
-                  </motion.p>
-                )}
-            </div>
+            {status === 'idle' ? (
+                <div className="flex flex-col items-center justify-center text-foreground/40">
+                    <User className="w-24 h-24"/>
+                </div>
+            ) : hasCameraPermission === false ? (
+                <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center text-destructive p-4">
+                    <VideoOff className="w-12 h-12 mb-2" />
+                    <p className="font-semibold text-center">Camera Access Required</p>
+                </div>
+            ) : (
+                <>
+                    <video ref={videoRef} className="absolute w-full h-full object-cover scale-x-[-1]" autoPlay muted playsInline />
+                    <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center text-white z-10 p-4">
+                        {currentStatus?.icon && (
+                            <motion.div 
+                            key={status}
+                            initial={{ opacity: 0, scale: 0.5 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="w-16 h-16"
+                            >
+                            {currentStatus.icon}
+                            </motion.div>
+                        )}
+                        {currentStatus?.text && (
+                        <motion.p 
+                            key={status + 'text'}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="font-semibold mt-4 text-center text-shadow"
+                            style={{textShadow: '0 1px 3px rgba(0,0,0,0.5)'}}
+                        >
+                            {currentStatus.text}
+                        </motion.p>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
         <Button onClick={handleScan} disabled={status !== "idle"} className="w-full max-w-sm" size="lg">
           {status === 'idle' ? <HeartPulse className="mr-2" /> : <Loader2 className="animate-spin" />}
@@ -290,3 +374,5 @@ function Step4({ onConfirm }: { onConfirm: () => void }) {
     </Card>
   );
 }
+
+    
