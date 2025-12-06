@@ -3,12 +3,15 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppContext } from '@/contexts/AppContext';
-import { ArrowRight, UserPlus } from 'lucide-react';
+import { ArrowRight, User, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { mockUserAli } from '@/lib/mock-data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
   const router = useRouter();
-  const { isLoggedIn } = useAppContext();
+  const { isLoggedIn, logout } = useAppContext();
 
   const handleProveClick = () => {
     if (isLoggedIn) {
@@ -61,9 +64,33 @@ export default function Home() {
       </CardContent>
     </Card>
   );
+  
+  const LoggedInView = () => (
+    <div className="flex flex-col items-center w-full max-w-md mb-10">
+        <Card className="w-full text-left">
+            <CardHeader className="flex flex-row items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={mockUserAli.imageUrl} alt={mockUserAli.legalName} />
+                  <AvatarFallback>{mockUserAli.legalName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <CardTitle className="text-2xl">{mockUserAli.legalName}</CardTitle>
+                    <CardDescription>Digital ID is active</CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-wrap gap-2 text-sm">
+                    <Badge variant="outline">{mockUserAli.relationship}</Badge>
+                    <Badge variant="outline">{mockUserAli.occupation}</Badge>
+                    <Badge variant="outline">{mockUserAli.currentLocation}</Badge>
+                </div>
+                 <Button variant="link" onClick={() => logout()} className="p-0 h-auto mt-4 text-muted-foreground text-sm">Not you? Log out.</Button>
+            </CardContent>
+        </Card>
+    </div>
+  );
 
-  return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-center flex flex-col items-center justify-center">
+  const LoggedOutView = () => (
       <div className="flex flex-col items-center">
         <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground mb-4">
           Stop Scams. Verify Identity.
@@ -72,6 +99,13 @@ export default function Home() {
           TrustBridge helps you confirm you're talking to who you think you are, without sharing private data.
         </p>
       </div>
+  );
+
+  return (
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-center flex flex-col items-center justify-center">
+      
+      {isLoggedIn ? <LoggedInView /> : <LoggedOutView />}
+
       <div className="flex flex-col md:flex-row justify-center items-stretch gap-6 w-full max-w-4xl">
         {verifierCard}
         {proverCard}
