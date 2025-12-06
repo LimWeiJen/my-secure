@@ -1,0 +1,62 @@
+"use client";
+
+import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import type { VerifyContextCheckOutput } from '@/ai/flows/verifier-context-check';
+
+export type UserRole = 'Grandma' | 'Ali';
+
+interface AppContextType {
+  currentUser: UserRole;
+  setCurrentUser: (user: UserRole) => void;
+  challengeCode: string | null;
+  generateChallengeCode: () => string;
+  isSigned: boolean;
+  signChallenge: () => void;
+  verificationResult: VerifyContextCheckOutput | null;
+  setVerificationResult: (result: VerifyContextCheckOutput | null) => void;
+  resetChallenge: () => void;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider = ({ children }: { children: ReactNode }) => {
+  const [currentUser, setCurrentUser] = useState<UserRole>('Grandma');
+  const [challengeCode, setChallengeCode] = useState<string | null>(null);
+  const [isSigned, setIsSigned] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<VerifyContextCheckOutput | null>(null);
+  const router = useRouter();
+
+  const generateChallengeCode = useCallback(() => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setChallengeCode(code);
+    setIsSigned(false);
+    setVerificationResult(null);
+    return code;
+  }, []);
+
+  const signChallenge = useCallback(() => {
+    setIsSigned(true);
+  }, []);
+  
+  const resetChallenge = useCallback(() => {
+    setChallengeCode(null);
+    setIsSigned(false);
+    setVerificationResult(null);
+    router.push('/');
+  }, [router]);
+
+  return (
+    <AppContext.Provider value={{ currentUser, setCurrentUser, challengeCode, generateChallengeCode, isSigned, signChallenge, verificationResult, setVerificationResult, resetChallenge }}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useAppContext = () => {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+};
