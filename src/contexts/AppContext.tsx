@@ -4,11 +4,7 @@ import React, { createContext, useState, useContext, ReactNode, useCallback } fr
 import { useRouter } from 'next/navigation';
 import type { VerifyContextCheckOutput } from '@/ai/flows/verifier-context-check';
 
-export type UserRole = 'Grandma' | 'Ali';
-
 interface AppContextType {
-  currentUser: UserRole;
-  setCurrentUser: (user: UserRole) => void;
   challengeCode: string | null;
   generateChallengeCode: () => string;
   isSigned: boolean;
@@ -21,7 +17,6 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<UserRole>('Grandma');
   const [challengeCode, setChallengeCode] = useState<string | null>(null);
   const [isSigned, setIsSigned] = useState(false);
   const [verificationResult, setVerificationResult] = useState<VerifyContextCheckOutput | null>(null);
@@ -47,7 +42,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [router]);
 
   return (
-    <AppContext.Provider value={{ currentUser, setCurrentUser, challengeCode, generateChallengeCode, isSigned, signChallenge, verificationResult, setVerificationResult, resetChallenge }}>
+    <AppContext.Provider value={{ challengeCode, generateChallengeCode, isSigned, signChallenge, verificationResult, setVerificationResult, resetChallenge }}>
       {children}
     </AppContext.Provider>
   );

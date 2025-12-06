@@ -27,20 +27,15 @@ const formSchema = z.object({
 export default function ResultPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { isSigned, currentUser, verificationResult, setVerificationResult, resetChallenge } = useAppContext();
+  const { isSigned, verificationResult, setVerificationResult, resetChallenge } = useAppContext();
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (currentUser !== 'Grandma') {
-      toast({ title: "Access Denied", description: "You must be in the Verifier (Grandma's) view.", variant: "destructive" });
-      router.push('/');
-      return;
-    }
     if (!isSigned) {
       toast({ title: "Not Signed Yet", description: "Waiting for the other user to sign the challenge.", variant: "default" });
       router.push('/verify');
     }
-  }, [currentUser, isSigned, router, toast]);
+  }, [isSigned, router, toast]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

@@ -2,12 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAppContext } from '@/contexts/AppContext';
 import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const { currentUser } = useAppContext();
   const router = useRouter();
 
   const handleAction = (path: string) => {
@@ -25,11 +23,9 @@ export default function Home() {
           className="w-full"
           size="lg"
           onClick={() => handleAction('/verify')}
-          disabled={currentUser !== 'Grandma'}
         >
           Start Verification <ArrowRight className="ml-2" />
         </Button>
-        {currentUser !== 'Grandma' && <p className="text-xs text-muted-foreground mt-2 text-center">Switch to Grandma's view to use this.</p>}
       </CardContent>
     </Card>
   );
@@ -45,11 +41,9 @@ export default function Home() {
           className="w-full"
           size="lg"
           onClick={() => handleAction('/prove')}
-          disabled={currentUser !== 'Ali'}
         >
           Enter Code <ArrowRight className="ml-2" />
         </Button>
-        {currentUser !== 'Ali' && <p className="text-xs text-muted-foreground mt-2 text-center">Switch to Ali's view to use this.</p>}
       </CardContent>
     </Card>
   );

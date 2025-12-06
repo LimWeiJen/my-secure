@@ -10,24 +10,17 @@ import { useToast } from '@/hooks/use-toast';
 export default function VerifyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { generateChallengeCode, isSigned, challengeCode, currentUser, resetChallenge } = useAppContext();
+  const { generateChallengeCode, isSigned, challengeCode, resetChallenge } = useAppContext();
   const [formattedCode, setFormattedCode] = useState('');
 
   useEffect(() => {
-    if (currentUser !== 'Grandma') {
-      toast({ title: "Access Denied", description: "You must be in the Verifier (Grandma's) view.", variant: "destructive" });
-      router.push('/');
-      return;
-    }
-    
-    // Only generate code if one doesn't exist
     if (!challengeCode) {
       const newCode = generateChallengeCode();
       setFormattedCode(`${newCode.slice(0, 3)}-${newCode.slice(3)}`);
     } else {
        setFormattedCode(`${challengeCode.slice(0, 3)}-${challengeCode.slice(3)}`);
     }
-  }, [currentUser, router, generateChallengeCode, challengeCode, toast]);
+  }, [generateChallengeCode, challengeCode]);
 
   useEffect(() => {
     if (isSigned) {

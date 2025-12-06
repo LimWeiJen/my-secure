@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,8 @@ import { Keypad } from '@/components/Keypad';
 export default function ProvePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { challengeCode, currentUser } = useAppContext();
+  const { challengeCode } = useAppContext();
   const [inputCode, setInputCode] = useState('');
-
-  useEffect(() => {
-    if (currentUser !== 'Ali') {
-      toast({ title: "Access Denied", description: "You must be in the Prover (Ali's) view.", variant: "destructive" });
-      router.push('/');
-    }
-  }, [currentUser, router, toast]);
 
   const handleSubmit = () => {
     if (!challengeCode) {

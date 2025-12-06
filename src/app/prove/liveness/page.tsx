@@ -1,26 +1,77 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export default function LivenessPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { signChallenge, currentUser, challengeCode } = useAppContext();
+  const { signChallenge, challengeCode } = useAppContext();
   const [status, setStatus] = useState<'idle' | 'scanning' | 'matched'>('idle');
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (currentUser !== 'Ali' || !challengeCode) {
+    if (!challengeCode) {
       toast({ title: "Invalid Access", description: "Please start the proof flow correctly.", variant: "destructive" });
       router.push('/');
     }
-  }, [currentUser, challengeCode, router, toast]);
+  }, [challengeCode, router, toast]);
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (typeof window !== "undefined" && navigator.mediaDevices) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          setHasCameraPermission(true);
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use this app.',
+          });
+        }
+      } else {
+        setHasCameraPermission(false);
+         toast({
+            variant: 'destructive',
+            title: 'Camera Not Supported',
+            description: 'Your browser does not support camera access.',
+          });
+      }
+    };
+
+    getCameraPermission();
+    
+    return () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+  }, [toast]);
 
   const handleScan = () => {
+    if (!hasCameraPermission) {
+        toast({
+            variant: 'destructive',
+            title: 'Camera Not Ready',
+            description: 'Cannot start scan without camera permission.',
+        });
+        return;
+    }
     setStatus('scanning');
     setTimeout(() => {
       setStatus('matched');
@@ -39,7 +90,9 @@ export default function LivenessPage() {
       </p>
       
       <div className="my-8 w-full max-w-md aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
-        {status === 'idle' && <Camera className="h-24 w-24 text-muted-foreground/50" />}
+        {status === 'idle' && (
+             <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted playsInline />
+        )}
         {status === 'scanning' && (
           <div className="flex flex-col items-center gap-4 text-accent">
             <Loader2 className="h-16 w-16 animate-spin" />
@@ -54,7 +107,16 @@ export default function LivenessPage() {
         )}
       </div>
 
-      <Button onClick={handleScan} size="lg" className="w-full max-w-md" disabled={status !== 'idle'}>
+       {hasCameraPermission === false && (
+          <Alert variant="destructive" className="w-full max-w-md mb-4">
+              <AlertTitle>Camera Access Required</AlertTitle>
+              <AlertDescription>
+                Please allow camera access to use this feature. You may need to refresh the page after granting permission.
+              </AlertDescription>
+          </Alert>
+        )}
+
+      <Button onClick={handleScan} size="lg" className="w-full max-w-md" disabled={status !== 'idle' || !hasCameraPermission}>
         {status === 'idle' ? 'Scan Face to Sign' : '...'}
       </Button>
     </div>
