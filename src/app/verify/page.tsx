@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function VerifyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { generateChallengeCode, isSigned, challengeCode, resetChallenge } = useAppContext();
+  const { generateChallengeCode, isSigned, challengeCode, resetChallenge, signChallenge } = useAppContext();
   const [formattedCode, setFormattedCode] = useState('');
 
   useEffect(() => {
@@ -33,6 +33,11 @@ export default function VerifyPage() {
       navigator.clipboard.writeText(challengeCode);
       toast({ title: "Code Copied!", description: "The challenge code has been copied to your clipboard." });
     }
+  };
+  
+  const handleBypass = () => {
+    signChallenge();
+    toast({ title: "Signature Simulated", description: "Proceeding to verification result." });
   };
 
   if (!challengeCode || !formattedCode) {
@@ -72,6 +77,10 @@ export default function VerifyPage() {
         <p className="text-muted-foreground text-sm max-w-sm">
           Once the other user enters the code and completes their liveness check, this screen will update automatically.
         </p>
+        {/* --- Prototype Bypass --- */}
+        <Button onClick={handleBypass} variant="secondary" className="mt-4">
+          Simulate Signature (Prototype)
+        </Button>
       </div>
     </div>
   );
