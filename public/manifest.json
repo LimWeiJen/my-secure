@@ -1,7 +1,7 @@
 {
-  "name": "My Security",
-  "short_name": "My Security",
-  "description": "Verify Your Identity Instantly with My Security.",
+  "name": "My Secure",
+  "short_name": "My Secure",
+  "description": "Verify Your Identity Instantly with My Secure.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

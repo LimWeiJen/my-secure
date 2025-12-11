@@ -166,7 +166,7 @@ export default function Home() {
           Verify Your Identity Instantly.
         </h1>
         <p className="text-base sm:text-lg text-muted-foreground">
-          My Security helps you confirm you're talking to who you think you are. Building digital trust is easier than ever.
+          My Secure helps you confirm you're talking to who you think you are. Building digital trust is easier than ever.
         </p>
       </div>
   );

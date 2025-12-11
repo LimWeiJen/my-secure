@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import FaceVerificationGuard from '@/components/FaceVerificationGuard';
 
 export const metadata: Metadata = {
-  title: 'My Security',
+  title: 'My Secure',
   description: 'Zero-Knowledge Identity Verification to Prevent Scams',
   manifest: '/manifest.json',
 };
